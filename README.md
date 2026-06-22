@@ -10,6 +10,7 @@ working end-to-end.
 
 | Folder | Covers |
 |---|---|
+| [`Summary/`](./summary) | A short summary report: What was built. Architecture diagram and explanation. What worked and what did not. Security and operational considerations.  What could be improved with more time|
 | [`K8-installation/`](./K8-installation) | The 10-script kubeadm + Cilium cluster build: prerequisites, containerd, kubeadm/kubelet/kubectl, control-plane init, Cilium install, node joins, verification, and firewall rules |
 | [`Rancher/`](./Rancher) | Rancher Manager: Helm install, GitHub OAuth SSO, Cilium Gateway exposure|
 | [`ArgoCD/`](./ArgoCD) | Argo CD: install, GitHub OAuth via Dex (including the RBAC numeric-subject gotcha), and the GitOps dev/staging/prod promotion structure |
