@@ -1,0 +1,53 @@
+---
+# High-priority job — requests 4 CPU / 4Gi total (2 pods x 2 CPU / 2Gi each)
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: high-prio-job
+  namespace: default
+  labels:
+    kueue.x-k8s.io/queue-name: high-priority-queue
+spec:
+  parallelism: 2
+  completions: 2
+  suspend: true
+  template:
+    spec:
+      priorityClassName: high-priority
+      containers:
+        - name: job
+          image: busybox
+          command: ["sleep", "60"]
+          resources:
+            requests:
+              cpu: "2"
+              memory: "2Gi"
+      restartPolicy: Never
+---
+# Low-priority job — same resource shape; with the ClusterQueue's 4 CPU / 8Gi
+# quota, submitting both jobs together oversubscribes CPU (8 requested vs 4
+# available), forcing this one to queue until the high-priority job finishes
+# and releases its quota.
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: low-prio-job
+  namespace: default
+  labels:
+    kueue.x-k8s.io/queue-name: low-priority-queue
+spec:
+  parallelism: 2
+  completions: 2
+  suspend: true
+  template:
+    spec:
+      priorityClassName: low-priority
+      containers:
+        - name: job
+          image: busybox
+          command: ["sleep", "60"]
+          resources:
+            requests:
+              cpu: "2"
+              memory: "2Gi"
+      restartPolicy: Never

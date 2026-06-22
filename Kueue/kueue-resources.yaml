@@ -1,0 +1,72 @@
+---
+# 1. ResourceFlavor — defines what "a unit of resource" means
+apiVersion: kueue.x-k8s.io/v1beta1
+kind: ResourceFlavor
+metadata:
+  name: default-flavor
+---
+# 2. ClusterQueue — the shared resource pool/quota
+apiVersion: kueue.x-k8s.io/v1beta1
+kind: ClusterQueue
+metadata:
+  name: cluster-queue
+spec:
+  namespaceSelector: {}
+  resourceGroups:
+    - coveredResources: ["cpu", "memory"]
+      flavors:
+        - name: default-flavor
+          resources:
+            - name: "cpu"
+              nominalQuota: 4
+            - name: "memory"
+              nominalQuota: 8Gi
+---
+# 3. Kueue's own priority class (controls queue ordering/preemption)
+apiVersion: kueue.x-k8s.io/v1beta1
+kind: WorkloadPriorityClass
+metadata:
+  name: high-priority
+value: 1000
+description: "High priority batch jobs — preempt low-priority jobs when resources are scarce"
+---
+apiVersion: kueue.x-k8s.io/v1beta1
+kind: WorkloadPriorityClass
+metadata:
+  name: low-priority
+value: 100
+description: "Low priority batch jobs — yield to high-priority jobs"
+---
+# 4. Native Kubernetes PriorityClass
+apiVersion: scheduling.k8s.io/v1
+kind: PriorityClass
+metadata:
+  name: high-priority
+value: 1000
+globalDefault: false
+description: "High priority batch jobs"
+---
+apiVersion: scheduling.k8s.io/v1
+kind: PriorityClass
+metadata:
+  name: low-priority
+value: 100
+globalDefault: false
+description: "Low priority batch jobs"
+---
+# 5. LocalQueues — both point at the same ClusterQueue/shared quota
+apiVersion: kueue.x-k8s.io/v1beta1
+kind: LocalQueue
+metadata:
+  name: high-priority-queue
+  namespace: default
+spec:
+  clusterQueue: cluster-queue
+---
+apiVersion: kueue.x-k8s.io/v1beta1
+kind: LocalQueue
+metadata:
+  name: low-priority-queue
+  namespace: default
+spec:
+  clusterQueue: cluster-queue

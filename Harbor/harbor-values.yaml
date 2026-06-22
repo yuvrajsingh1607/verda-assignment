@@ -1,0 +1,19 @@
+expose:
+  type: clusterIP
+  tls:
+    enabled: false
+externalURL: https://harbor.95.133.253.118.sslip.io
+harborAdminPassword: "Harbor12345"
+persistence:
+  enabled: true
+  persistentVolumeClaim:
+    registry:
+      size: 20Gi
+    database:
+      size: 5Gi
+    redis:
+      size: 2Gi
+    trivy:
+      size: 5Gi
+trivy:
+  enabled: true

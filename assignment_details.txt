@@ -1,0 +1,44 @@
+Goal Provision infrastructure on Verda Cloud and build a small Kubernetes platform that demonstrates practical DevOps/platform engineering skills.The assignment should take a
+few focused hours. We do not expect everything to be perfect. We care more about your reasoning, tradeoffs, debugging approach, and final summary than a copy-paste “happy
+path”.
+
+Setup Signup and share you email and we will add credits on Verda Cloud account. Please provision CPU VMs with public IPs and build your environment there.
+
+Scope:
+1. Access instructions or screenshots
+2. Git repository with manifests/scripts/docs
+3. A short summary report:
+  ○ What you built
+  ○ Architecture diagram or explanation
+  ○ What worked / what did not
+  ○ Security and operational considerations
+  ○ What you would improve with more time
+
+Senior Assignment
+Complete the base assignment, plus bonus task
+1. Install Rancher Manager or explain clearly why you chose not to.
+  ○ Configure any SSO if possible.
+  ○ Register/import the created Kubernetes cluster.
+2. Install Argo CD.
+  ○ Configure SSO if possible.
+  ○ Deploy at least one app through Argo CD.
+  ○ Show GitOps structure and promotion thinking.
+3. Add Harbor or another registry.
+  ○ Push/build an image or explain image flow.
+  ○ Connect deployment flow to Argo CD where possible.
+4. Monitoring and operations.
+  ○ Install kube-prometheus-stack or equivalent.
+  ○ Add useful Grafana dashboards for cluster health.
+  ○ Explain which alerts you would configure for production.
+
+Optional Advanced Tasks Choose that fit the available time:
+  ● Install Cilium and explain network policy / observability approach.
+  ● Add KWOK to simulate a larger cluster, for example 100 nodes.
+  ● Install Kueue and create high-priority and low-priority job queues.
+
+● If GPU nodes are available:
+  ○ Install NVIDIA drivers manually or with NVIDIA GPU Operator.
+  ○ Trigger some GPU workload.
+  ○ Show GPU scheduling and monitoring.
+● Add backup strategy for Rancher, Argo CD, Harbor, and cluster state.
+● Add security hardening

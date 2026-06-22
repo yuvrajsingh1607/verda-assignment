@@ -1,0 +1,125 @@
+---
+# 1. Self-signed bootstrap issuer
+apiVersion: cert-manager.io/v1
+kind: Issuer
+metadata:
+  name: selfsigned-bootstrap
+  namespace: argocd
+spec:
+  selfSigned: {}
+---
+# 2. CA certificate
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: argocd-ca
+  namespace: argocd
+spec:
+  isCA: true
+  commonName: argocd-ca
+  secretName: argocd-ca-secret
+  privateKey:
+    algorithm: ECDSA
+    size: 256
+  issuerRef:
+    name: selfsigned-bootstrap
+    kind: Issuer
+---
+# 3. Real Issuer backed by the CA above
+apiVersion: cert-manager.io/v1
+kind: Issuer
+metadata:
+  name: argocd
+  namespace: argocd
+spec:
+  ca:
+    secretName: argocd-ca-secret
+---
+# 4. Leaf certificate for the Argo CD hostname
+# NOTE: final hostname used was argocd.95.133.253.146.sslip.io (worker-2),
+# not the .31.22.104.56 (worker-3) address tried first — worker-3 was
+# already in use by the Rancher Gateway, so this moved to worker-2.
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: argocd-gateway-tls
+  namespace: argocd
+spec:
+  secretName: argocd-gateway-tls
+  dnsNames:
+    - "argocd.95.133.253.146.sslip.io"
+  issuerRef:
+    name: argocd
+    kind: Issuer
+---
+# 5. Gateway
+apiVersion: gateway.networking.k8s.io/v1
+kind: Gateway
+metadata:
+  name: argocd-gateway
+  namespace: argocd
+  labels:
+    io.cilium/gateway: argocd
+spec:
+  gatewayClassName: cilium
+  listeners:
+    - name: https
+      protocol: HTTPS
+      port: 443
+      hostname: "argocd.95.133.253.146.sslip.io"
+      tls:
+        mode: Terminate
+        certificateRefs:
+          - name: argocd-gateway-tls
+      allowedRoutes:
+        namespaces:
+          from: Same
+---
+# 6. HTTPRoute -> argocd-server, plain HTTP on port 80
+# Requires server.insecure=true in argocd-cmd-params-cm (see install steps)
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: argocd-route
+  namespace: argocd
+spec:
+  parentRefs:
+    - name: argocd-gateway
+  hostnames:
+    - "argocd.95.133.253.146.sslip.io"
+  rules:
+    - backendRefs:
+        - name: argocd-server
+          port: 80
+---
+# 7. IP pool: claims worker-2's existing node IP
+apiVersion: "cilium.io/v2alpha1"
+kind: CiliumLoadBalancerIPPool
+metadata:
+  name: argocd-gateway-pool
+spec:
+  blocks:
+    - cidr: "95.133.253.146/32"
+  serviceSelector:
+    matchLabels:
+      io.cilium.gateway/owning-gateway: argocd-gateway
+---
+# 8. L2 announcement policy: only worker-2 announces this IP
+apiVersion: "cilium.io/v2alpha1"
+kind: CiliumL2AnnouncementPolicy
+metadata:
+  name: argocd-gateway-l2policy
+spec:
+  serviceSelector:
+    matchLabels:
+      io.cilium.gateway/owning-gateway: argocd-gateway
+  nodeSelector:
+    matchExpressions:
+      - key: kubernetes.io/hostname
+        operator: In
+        values:
+          - worker-2
+  interfaces:
+    - ^eth[0-9]+
+  externalIPs: false
+  loadBalancerIPs: true

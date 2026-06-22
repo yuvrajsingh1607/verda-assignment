@@ -1,0 +1,65 @@
+---
+# Dev — automated sync, self-heal, fast feedback loop
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: verda-flask-dev
+  namespace: argocd
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/yuvrajsingh1607/verda-flask-gitops.git
+    targetRevision: main
+    path: overlays/dev
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: verda-flask-dev
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+---
+# Staging — automated sync, mirrors dev's policy, pre-prod validation
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: verda-flask-staging
+  namespace: argocd
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/yuvrajsingh1607/verda-flask-gitops.git
+    targetRevision: main
+    path: overlays/staging
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: verda-flask-staging
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+---
+# Prod — NO automated sync block. Promotion is a deliberate, manual action
+# (kubectl -n argocd patch application verda-flask-prod ... operation.sync,
+# or clicking "Sync" in the UI) — this is the actual promotion gate.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: verda-flask-prod
+  namespace: argocd
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/yuvrajsingh1607/verda-flask-gitops.git
+    targetRevision: main
+    path: overlays/prod
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: verda-flask-prod
+  syncPolicy:
+    syncOptions:
+      - CreateNamespace=true

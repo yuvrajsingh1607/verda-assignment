@@ -1,0 +1,121 @@
+---
+# 1. Self-signed bootstrap issuer (root of trust for Harbor's own CA)
+apiVersion: cert-manager.io/v1
+kind: Issuer
+metadata:
+  name: selfsigned-bootstrap
+  namespace: harbor
+spec:
+  selfSigned: {}
+---
+# 2. CA certificate, signed by the bootstrap issuer
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: harbor-ca
+  namespace: harbor
+spec:
+  isCA: true
+  commonName: harbor-ca
+  secretName: harbor-ca-secret
+  privateKey:
+    algorithm: ECDSA
+    size: 256
+  issuerRef:
+    name: selfsigned-bootstrap
+    kind: Issuer
+---
+# 3. The real Issuer Harbor's leaf cert uses, backed by the CA above
+apiVersion: cert-manager.io/v1
+kind: Issuer
+metadata:
+  name: harbor
+  namespace: harbor
+spec:
+  ca:
+    secretName: harbor-ca-secret
+---
+# 4. Leaf certificate for the actual Harbor hostname
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: harbor-gateway-tls
+  namespace: harbor
+spec:
+  secretName: harbor-gateway-tls
+  dnsNames:
+    - "harbor.95.133.253.118.sslip.io"
+  issuerRef:
+    name: harbor
+    kind: Issuer
+---
+# 5. Gateway: terminates TLS, listens on worker-1's announced IP
+apiVersion: gateway.networking.k8s.io/v1
+kind: Gateway
+metadata:
+  name: harbor-gateway
+  namespace: harbor
+  labels:
+    io.cilium/gateway: harbor
+spec:
+  gatewayClassName: cilium
+  listeners:
+    - name: https
+      protocol: HTTPS
+      port: 443
+      hostname: "harbor.95.133.253.118.sslip.io"
+      tls:
+        mode: Terminate
+        certificateRefs:
+          - name: harbor-gateway-tls
+      allowedRoutes:
+        namespaces:
+          from: Same
+---
+# 6. HTTPRoute -> harbor service (nginx front door), plain HTTP on port 80
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: harbor-route
+  namespace: harbor
+spec:
+  parentRefs:
+    - name: harbor-gateway
+  hostnames:
+    - "harbor.95.133.253.118.sslip.io"
+  rules:
+    - backendRefs:
+        - name: harbor
+          port: 80
+---
+# 7. IP pool: claims worker-1's existing node IP for the Gateway's LoadBalancer Service
+apiVersion: "cilium.io/v2alpha1"
+kind: CiliumLoadBalancerIPPool
+metadata:
+  name: harbor-gateway-pool
+spec:
+  blocks:
+    - cidr: "95.133.253.118/32"
+  serviceSelector:
+    matchLabels:
+      io.cilium.gateway/owning-gateway: harbor-gateway
+---
+# 8. L2 announcement policy: only worker-1 ARP-announces this IP
+apiVersion: "cilium.io/v2alpha1"
+kind: CiliumL2AnnouncementPolicy
+metadata:
+  name: harbor-gateway-l2policy
+spec:
+  serviceSelector:
+    matchLabels:
+      io.cilium.gateway/owning-gateway: harbor-gateway
+  nodeSelector:
+    matchExpressions:
+      - key: kubernetes.io/hostname
+        operator: In
+        values:
+          - worker-1
+  interfaces:
+    - ^eth[0-9]+
+  externalIPs: false
+  loadBalancerIPs: true
