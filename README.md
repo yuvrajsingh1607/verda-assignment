@@ -29,8 +29,8 @@ Each folder is self-contained: a `.md` reference document plus the exact
 `.yaml` manifests (and any helper scripts) it references by name. Start
 with the `.md` file in any folder — it explains the installation commands and how the service is exposed or used.
 
-If you're rebuilding this cluster from scratch, read `K8-installation/`
-first, then the others in roughly the order they were built:
+Cluster was build using `K8-installation/`
+first, then the others in the following order were built:
 Rancher → ArgoCD → Harbor → monitoring → cilium → Kwok → Kueue →
 Nvidia_workload_scheduling → Backup_Velero. `Security` is meant to be
 read last, since it references findings from every other folder.
