@@ -4,7 +4,7 @@
 
 ---
 
-## 1. What You Built
+## 1. What was Built
 
 A self-managed Kubernetes platform, built from bare VMs up, covering the
 full lifecycle of a real platform-engineering stack — not just a single
@@ -126,7 +126,7 @@ Harbor CA-trust chain and the Hubble Relay debugging.
 
 ---
 
-## 5. What Would Be Improved With More Time
+## 5. What Can Be Improved With More Time
 
 1. **Move Harbor's registry storage to real object storage (S3/GCS).**
    This single change converts "must back up a PersistentVolume" into
