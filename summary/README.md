@@ -85,25 +85,6 @@ distinct external IPs, six independent TLS chains, one consistent pattern.
 - **Argo CD SSO**: required restarting *two* separate Deployments (Dex
   and the server itself) and discovering that Argo CD's RBAC matches a
   numeric GitHub user ID, not a username
-- **Hubble Relay**: the single longest debugging chain of the entire
-  engagement — a missing firewall port, a known upstream FQDN bug, a TLS
-  red herring, and finally the real cause (`kube-proxy` conflicting with
-  Cilium's own Service routing on a `hostNetwork`-backed Service)
-- **GPU node join**: removing `kube-proxy` (for the Hubble fix) created
-  a chicken-and-egg bootstrap gap for any *future* node join — hit live
-  when the GPU node tried to join
-
-### Did not fully work / deprioritized
-- Two of the default Grafana dashboard's panels (CPU/Memory Utilisation)
-  never got fixed — root cause understood and a fix script written, but
-  not applied, since every other dashboard already provided sufficient
-  cluster-health visibility
-- `externalLabels` was tried as a fix for the dashboard issue above and
-  was a genuine dead end — external labels are invisible to Prometheus's
-  own local queries by design, a fact not discovered until after trying it
-- Velero's MinIO backend uses `emptyDir` storage — functionally working,
-  but not durable; a known, accepted limitation for this demo, not
-  something to rely on for real backups
 
 ---
 
@@ -179,17 +160,12 @@ Harbor CA-trust chain and the Hubble Relay debugging.
    it just needs applying retroactively to every other port currently
    open to the entire internet.
 
-7. **Finish the dashboard fix.** The CPU/Memory Utilisation panels'
-   root cause is fully understood and a fix script (`strip-cluster-
-   filter.py`) already exists — applying it is a five-minute task that
-   was simply deprioritized for time, not blocked by anything technical.
-
-8. **Add ResourceQuotas and Pod Security Standards** to every namespace,
+7. **Add ResourceQuotas and Pod Security Standards** to every namespace,
    starting with `baseline` enforcement and explicit exemptions for
    workloads (like the GPU Operator's driver DaemonSets) that
    legitimately need elevated host access.
 
-9. **Build a small CI step that validates manifests before they reach
+8. **Build a small CI step that validates manifests before they reach
    Argo CD** — every YAML in this engagement was hand-applied and
    manually verified; a real pipeline would lint and dry-run-apply
    manifests in CI before they ever reach a cluster, catching the kind
