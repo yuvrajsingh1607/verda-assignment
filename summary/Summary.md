@@ -4,7 +4,7 @@
 
 ---
 
-## 1. What was Built
+## 1. What You Built
 
 A self-managed Kubernetes platform, built from bare VMs up, covering the
 full lifecycle of a real platform-engineering stack — not just a single
@@ -61,8 +61,6 @@ one node's existing public IP, and a `CiliumL2AnnouncementPolicy` pinning
 that IP's ARP announcement to one specific node — six services, six
 distinct external IPs, six independent TLS chains, one consistent pattern.
 
-
-![alt text](CICD_Pipeline_Diagram-1.png)
 ---
 
 ## 3. What Worked / What Did Not
@@ -87,6 +85,25 @@ distinct external IPs, six independent TLS chains, one consistent pattern.
 - **Argo CD SSO**: required restarting *two* separate Deployments (Dex
   and the server itself) and discovering that Argo CD's RBAC matches a
   numeric GitHub user ID, not a username
+- **Hubble Relay**: the single longest debugging chain of the entire
+  engagement — a missing firewall port, a known upstream FQDN bug, a TLS
+  red herring, and finally the real cause (`kube-proxy` conflicting with
+  Cilium's own Service routing on a `hostNetwork`-backed Service)
+- **GPU node join**: removing `kube-proxy` (for the Hubble fix) created
+  a chicken-and-egg bootstrap gap for any *future* node join — hit live
+  when the GPU node tried to join
+
+### Did not fully work / deprioritized
+- Two of the default Grafana dashboard's panels (CPU/Memory Utilisation)
+  never got fixed — root cause understood and a fix script written, but
+  not applied, since every other dashboard already provided sufficient
+  cluster-health visibility
+- `externalLabels` was tried as a fix for the dashboard issue above and
+  was a genuine dead end — external labels are invisible to Prometheus's
+  own local queries by design, a fact not discovered until after trying it
+- Velero's MinIO backend uses `emptyDir` storage — functionally working,
+  but not durable; a known, accepted limitation for this demo, not
+  something to rely on for real backups
 
 ---
 
@@ -128,7 +145,7 @@ Harbor CA-trust chain and the Hubble Relay debugging.
 
 ---
 
-## 5. What Can Be Improved With More Time
+## 5. What Would Be Improved With More Time
 
 1. **Move Harbor's registry storage to real object storage (S3/GCS).**
    This single change converts "must back up a PersistentVolume" into
@@ -162,12 +179,17 @@ Harbor CA-trust chain and the Hubble Relay debugging.
    it just needs applying retroactively to every other port currently
    open to the entire internet.
 
-7. **Add ResourceQuotas and Pod Security Standards** to every namespace,
+7. **Finish the dashboard fix.** The CPU/Memory Utilisation panels'
+   root cause is fully understood and a fix script (`strip-cluster-
+   filter.py`) already exists — applying it is a five-minute task that
+   was simply deprioritized for time, not blocked by anything technical.
+
+8. **Add ResourceQuotas and Pod Security Standards** to every namespace,
    starting with `baseline` enforcement and explicit exemptions for
    workloads (like the GPU Operator's driver DaemonSets) that
    legitimately need elevated host access.
 
-8. **Build a small CI step that validates manifests before they reach
+9. **Build a small CI step that validates manifests before they reach
    Argo CD** — every YAML in this engagement was hand-applied and
    manually verified; a real pipeline would lint and dry-run-apply
    manifests in CI before they ever reach a cluster, catching the kind

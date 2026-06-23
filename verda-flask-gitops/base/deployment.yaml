@@ -1,0 +1,40 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: verda-flask
+  labels:
+    app: verda-flask
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: verda-flask
+  template:
+    metadata:
+      labels:
+        app: verda-flask
+    spec:
+      containers:
+        - name: verda-flask
+          image: harbor.95.133.253.118.sslip.io/verda-harbor/verda-flask:v1
+          ports:
+            - containerPort: 5000
+          readinessProbe:
+            httpGet:
+              path: /healthz
+              port: 5000
+            initialDelaySeconds: 3
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: 5000
+            initialDelaySeconds: 5
+            periodSeconds: 20
+          resources:
+            requests:
+              cpu: "50m"
+              memory: "64Mi"
+            limits:
+              cpu: "200m"
+              memory: "128Mi"

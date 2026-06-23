@@ -13,7 +13,7 @@ working end-to-end.
 | [`Summary/`](./summary) | A short summary report: What was built. Architecture diagram and explanation. What worked and what did not. Security and operational considerations.  What could be improved with more time|
 | [`K8-installation/`](./K8-installation) | The 10-script kubeadm + Cilium cluster build: prerequisites, containerd, kubeadm/kubelet/kubectl, control-plane init, Cilium install, node joins, verification, and firewall rules |
 | [`Rancher/`](./Rancher) | Rancher Manager: Helm install, GitHub OAuth SSO, Cilium Gateway exposure|
-| [`ArgoCD/`](./ArgoCD) | Argo CD: install, GitHub OAuth via Dex (including the RBAC numeric-subject gotcha), and the GitOps dev/staging/prod promotion structure |
+| [`ArgoCD/`](./ArgoCD) | Argo CD: install, GitHub OAuth via Dex (including the RBAC numeric-subject gotcha), and the GitOps dev/staging/prod promotion structure. uses verda-flask-gitops repo to fetch application codebase.|
 | [`Harbor/`](./Harbor) | Harbor registry: install, the StorageClass prerequisite, and the three-layer CA-trust saga for pushing/pulling images through a self-signed registry |
 | [`monitoring/`](./monitoring) | Prometheus + Grafana (kube-prometheus-stack): install, GPU/DCGM integration, and the production alerting strategy |
 | [`cilium/`](./cilium) | Cilium network policy approach (with one policy deployed and verified end-to-end) and the Hubble Relay observability debugging chain |
@@ -29,8 +29,8 @@ Each folder is self-contained: a `.md` reference document plus the exact
 `.yaml` manifests (and any helper scripts) it references by name. Start
 with the `.md` file in any folder — it explains the installation commands and how the service is exposed or used.
 
-Cluster was build using `K8-installation/`
-first, then the others in the following order were built:
+If you're rebuilding this cluster from scratch, read `K8-installation/`
+first, then the others in roughly the order they were built:
 Rancher → ArgoCD → Harbor → monitoring → cilium → Kwok → Kueue →
 Nvidia_workload_scheduling → Backup_Velero. `Security` is meant to be
 read last, since it references findings from every other folder.
